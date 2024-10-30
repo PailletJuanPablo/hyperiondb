@@ -5,7 +5,7 @@ use tokio::net::TcpStream;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter};
 use serde_json::json;
 use rand::Rng;
-use tokio::time::{Instant};
+use tokio::time::Instant;
 
 /// Configuración para la prueba de rendimiento
 struct PerfConfig {
@@ -61,8 +61,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Configuración
     let config = PerfConfig {
         server_addr: "127.0.0.1:8080".to_string(),
-        num_records: 100, // Cantidad de registros a insertar
-        batch_size: 100,    // Cantidad de registros por lote
+        num_records: 5000, // Cantidad de registros a insertar
+        batch_size: 250,    // Cantidad de registros por lote
     };
 
     // Conectar al servidor de HyperionDB

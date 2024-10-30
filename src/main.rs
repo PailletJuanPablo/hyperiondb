@@ -2,6 +2,7 @@
 
 mod db;
 mod handler;
+mod utils;
 
 use db::HyperionDB;
 use handler::handle_command;
@@ -12,8 +13,27 @@ use std::error::Error;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // Especifica los campos a indexar
-    let indexed_fields = vec!["age".to_string(), "city".to_string(), "name".to_string()];
-
+    let indexed_fields = vec![
+        "name".to_string(),
+        "age".to_string(),
+        "address.city".to_string(),
+        "category".to_string(),
+        "city".to_string(),
+        "sku".to_string(),
+        "description".to_string(),
+        "address.zipcode".to_string(),
+        "product_name".to_string(),
+        "price".to_string(),
+        "currency".to_string(),
+        "specs.processor".to_string(),
+        "specs.ram".to_string(),
+        "specs.battery".to_string(),
+        
+        "in_stock".to_string(),
+        "created_at".to_string(),
+        "warehouses.warehouse1".to_string(),
+        "warehouses.warehouse2".to_string(),
+    ];
     // Initialize the database with persistence and indexed fields
     let db = HyperionDB::new("hyperiondb_data.json".to_string(), indexed_fields).await;
 

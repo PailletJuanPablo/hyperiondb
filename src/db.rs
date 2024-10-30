@@ -1,16 +1,18 @@
-// src/db.rs
-
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::error::Error;
 use std::sync::Arc;
 use tokio::fs::{File, OpenOptions};
-use tokio::io::{AsyncReadExt, AsyncWriteExt}; // Importación correcta
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::RwLock;
+
+use crate::utils::flatten_json;
+
 pub enum Index {
-    Numeric(BTreeMap<i64, HashSet<String>>), // Change to i64 for ordered indexing
+    Numeric(BTreeMap<i64, HashSet<String>>),
     String(BTreeMap<String, HashSet<String>>),
 }
+
 impl Index {
     fn as_numeric_mut(&mut self) -> Option<&mut BTreeMap<i64, HashSet<String>>> {
         if let Index::Numeric(ref mut map) = self {
@@ -30,7 +32,7 @@ impl Index {
 }
 
 fn convert_f64_to_i64(value: f64) -> i64 {
-    (value * 1000.0) as i64 // Multiply to retain precision and convert to integer
+    (value * 1000.0) as i64 // Multiplicar para mantener precisión y convertir a entero
 }
 
 pub async fn update_indices_on_insert(
@@ -41,7 +43,10 @@ pub async fn update_indices_on_insert(
 ) {
     let mut indices_write = indices.write().await;
     if let Value::Object(map) = value {
-        for (field, field_value) in map.iter() {
+        let mut flat_map = HashMap::new();
+        flatten_json(value, None, &mut flat_map);
+
+        for (field, field_value) in flat_map.iter() {
             if indexed_fields.contains(field) {
                 match field_value {
                     Value::Number(num) => {
@@ -82,7 +87,10 @@ pub async fn update_indices_on_delete(
 ) {
     let mut indices_write = indices.write().await;
     if let Value::Object(map) = value {
-        for (field, field_value) in map.iter() {
+        let mut flat_map = HashMap::new();
+        flatten_json(value, None, &mut flat_map);
+
+        for (field, field_value) in flat_map.iter() {
             if indexed_fields.contains(field) {
                 match field_value {
                     Value::Number(num) => {
@@ -133,7 +141,7 @@ pub struct HyperionDB {
 }
 
 impl HyperionDB {
-
+    /// Crea una nueva instancia de HyperionDB y carga datos desde el archivo si existe.
     pub async fn new(data_file: String, indexed_fields: Vec<String>) -> Self {
         let storage;
         let indices = Arc::new(RwLock::new(HashMap::new()));
@@ -163,42 +171,59 @@ impl HyperionDB {
         }
     }
 
+    /// Inserta un registro en la base de datos.
     pub async fn insert(&self, key: String, value: Value) -> Result<(), Box<dyn Error>> {
         {
             let mut storage = self.storage.write().await;
+            // Almacenar el valor original
             storage.insert(key.clone(), value.clone());
         }
+
+        // Aplanar el JSON y actualizar índices
         update_indices_on_insert(&self.indices, &key, &value, &self.indexed_fields).await;
+
+        // Guardar datos en el archivo
         self.save_to_disk().await?;
+
         Ok(())
     }
 
+    /// Recupera un registro por su clave.
     pub async fn get(&self, key: &str) -> Option<Value> {
         let storage = self.storage.read().await;
         storage.get(key).cloned()
     }
 
+    /// Elimina un registro de la base de datos y actualiza los índices correspondientes.
     pub async fn delete(&self, key: &str) -> Result<(), Box<dyn Error>> {
-        let value_opt;
-        {
+        let value_option = {
             let mut storage = self.storage.write().await;
-            value_opt = storage.remove(key);
-        }
-        if let Some(value) = value_opt {
+            storage.remove(key)
+        };
+
+        if let Some(value) = value_option {
+            // Aplanar el JSON y actualizar índices
             update_indices_on_delete(&self.indices, key, &value, &self.indexed_fields).await;
+
+            // Guardar datos en el archivo
+            self.save_to_disk().await?;
+
+            Ok(())
+        } else {
+            Err("Key not found".into())
         }
-        self.save_to_disk().await?;
-        Ok(())
     }
 
+    /// Realiza una consulta en la base de datos con el campo, operador y valor dados.
     pub async fn query(&self, field: &str, operator: &str, value: &str) -> Vec<Value> {
         let indices = self.indices.read().await;
+
         if let Some(index) = indices.get(field) {
-            match index {
+            let keys = match index {
                 Index::Numeric(btree_map) => {
                     if let Ok(v) = value.parse::<f64>() {
                         let int_value = convert_f64_to_i64(v);
-                        let keys = match operator {
+                        match operator {
                             "=" => btree_map.get(&int_value).cloned().unwrap_or_default(),
                             "!=" => {
                                 let mut result = HashSet::new();
@@ -226,51 +251,53 @@ impl HyperionDB {
                                 .flat_map(|(_, set)| set.clone())
                                 .collect(),
                             _ => HashSet::new(),
-                        };
-                        self.get_records_by_keys(&keys).await
+                        }
                     } else {
-                        Vec::new()
+                        HashSet::new()
                     }
                 }
-                Index::String(btree_map) => {
-                    let keys = match operator {
-                        "=" => btree_map.get(value).cloned().unwrap_or_default(),
-                        "!=" => {
-                            let mut result = HashSet::new();
-                            for (k, set) in btree_map {
-                                if k != value {
-                                    result.extend(set.clone());
-                                }
-                            }
-                            result
-                        }
-                        "CONTAINS" => {
-                            let mut result = HashSet::new();
-                            for (k, set) in btree_map
-                                .range(value.to_string()..)
-                                .take_while(|(key, _)| key.starts_with(value))
-                            {
+                Index::String(btree_map) => match operator {
+                    "=" => btree_map.get(value).cloned().unwrap_or_default(),
+                    "!=" => {
+                        let mut result = HashSet::new();
+                        for (k, set) in btree_map {
+                            if k != value {
                                 result.extend(set.clone());
                             }
-                            result
                         }
-                        _ => HashSet::new(),
-                    };
-                    self.get_records_by_keys(&keys).await
-                }
-            }
+                        result
+                    }
+                    "CONTAINS" => {
+                        let mut result = HashSet::new();
+                        for (_k, set) in btree_map
+                            .range(value.to_string()..)
+                            .take_while(|(key, _)| key.starts_with(value))
+                        {
+                            result.extend(set.clone());
+                        }
+                        result
+                    }
+                    _ => HashSet::new(),
+                },
+            };
+
+            // Obtener los registros originales
+            self.get_records_by_keys(&keys).await
         } else {
             Vec::new()
         }
     }
+
+    /// Recupera los registros por sus claves.
     async fn get_records_by_keys(&self, keys: &HashSet<String>) -> Vec<Value> {
         let storage = self.storage.read().await;
         keys.iter()
             .filter_map(|key| storage.get(key).cloned())
             .collect()
     }
+
     /// Guarda el estado actual de la base de datos en disco
-    async fn save_to_disk(&self) -> Result<(), Box<dyn Error>> {
+    pub async fn save_to_disk(&self) -> Result<(), Box<dyn Error>> {
         let storage = self.storage.read().await;
         let data = serde_json::to_string(&*storage)?;
         let mut file = OpenOptions::new()
@@ -279,11 +306,11 @@ impl HyperionDB {
             .truncate(true)
             .open(&self.data_file)
             .await?;
-        file.write_all(data.as_bytes()).await?; // Ahora debería funcionar correctamente
+        file.write_all(data.as_bytes()).await?;
         Ok(())
     }
 
-    /// Retrieves all records in the database.
+    /// Recupera todos los registros en la base de datos.
     pub async fn get_all_records(&self) -> Vec<Value> {
         let storage = self.storage.read().await;
         storage.values().cloned().collect()

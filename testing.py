@@ -27,6 +27,7 @@ class HyperionDBClient:
     def query(self, field, operator, value):
         command = f"QUERY {field} {operator} {value}"
         return self.send_command(command)
+
     def list(self):
         command = "LIST"
         return self.send_command(command)
@@ -36,7 +37,7 @@ class HyperionDBClient:
 def perform_query_and_measure_time(client, field, operator, value):
     start_time = time.time()
     try:
-        result = client.list()
+        result = client.query(field, operator, value)
         end_time = time.time()
         elapsed_time = end_time - start_time
         
@@ -52,17 +53,19 @@ def perform_query_and_measure_time(client, field, operator, value):
         print(f"Error en la consulta {field} {operator} {value}: {e}")
 
 
-# Ejecución de consultas
+# Ejecución de consultas avanzadas
 if __name__ == "__main__":
     client = HyperionDBClient("127.0.0.1", 8080)
 
-    # Consultas de ejemplo
+    # Consultas avanzadas de ejemplo basadas en la estructura de datos
     queries = [
-        ("age", ">", "30"),
-        ("age", "<=", "25"),
-        ("city", "CONTAINS", "San"),
-        ("city", "=", "New York")
+        ("currency", "=", "PKR"),                            # Moneda específica
+        ("name", "CONTAINS", "Gaston"),                      # Consulta por nombre
+        ("price", ">", "100"),                               # Consulta por precio mínimo
+        ("price", "<", "300"),                               # Consulta por precio máximo
+        ("specs.processor", "=", "Dual-core"),               # Procesador específico en JSON anidado
     ]
 
+    # Ejecuta y mide cada consulta
     for field, operator, value in queries:
         perform_query_and_measure_time(client, field, operator, value)
