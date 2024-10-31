@@ -1,10 +1,6 @@
-// src/handler/mod.rs
-
 use crate::hyperion_db::HyperionDB;
-// Eliminado: use serde_json::json;
 use std::error::Error;
 
-/// Maneja los comandos recibidos y ejecuta las operaciones correspondientes.
 pub async fn handle_command(db: &HyperionDB, command: String) -> Result<String, Box<dyn Error>> {
     let cmd_line = command.trim();
     let cmd_parts: Vec<&str> = cmd_line.splitn(2, ' ').collect();
@@ -15,9 +11,7 @@ pub async fn handle_command(db: &HyperionDB, command: String) -> Result<String, 
             if let Some(rest) = cmd_parts.get(1) {
                 let insert_parts: Vec<&str> = rest.trim().splitn(2, ' ').collect();
                 if let (Some(key), Some(value_str)) = (insert_parts.get(0), insert_parts.get(1)) {
-                    // Intentamos deserializar el valor JSON
                     let value: serde_json::Value = serde_json::from_str(value_str)?;
-                    // Insertamos el registro en la base de datos
                     db.insert(key.to_string(), value).await?;
                     Ok("OK\n".to_string())
                 } else {

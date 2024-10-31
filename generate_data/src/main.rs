@@ -87,8 +87,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Configuración
     let config = PerfConfig {
         server_addr: "127.0.0.1:8080".to_string(),
-        num_records: 10000, // Cantidad de registros a insertar
-        batch_size: 500,    // Cantidad de registros por lote
+        num_records: 2000, // Cantidad de registros a insertar
+        batch_size: 100,    // Cantidad de registros por lote
     };
 
     // Conectar al servidor de HyperionDB
