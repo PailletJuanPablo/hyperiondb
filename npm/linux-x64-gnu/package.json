@@ -1,0 +1,21 @@
+{
+  "name": "hyperiondb-linux-x64-gnu",
+  "version": "1.0.1",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "main": "hyperiondb.linux-x64-gnu.node",
+  "files": [
+    "hyperiondb.linux-x64-gnu.node"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  },
+  "libc": [
+    "glibc"
+  ]
+}

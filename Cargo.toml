@@ -1,7 +1,11 @@
 [package]
-name = "hyperiondb"
-version = "0.1.0"
 edition = "2021"
+name = "hyperiondb"
+version = "0.0.0"
+
+[lib]
+crate-type = ["cdylib"]
+name = "hyperiondb"
 
 [dependencies]
 tokio = { version = "1.28", features = ["full"] }
@@ -14,9 +18,12 @@ futures = "0.3"
 napi = { version = "2.7.0", features = ["tokio_rt"] }
 napi-derive = "2.7.0"
 
-[lib]
-name = "hyperiondb"
-crate-type = ["cdylib"]
+[build-dependencies]
+napi-build = "2.0.1"
+
+[profile.release]
+lto = true
+strip = "symbols"
 
 [[bin]]
 name = "hyperiondb_bin"

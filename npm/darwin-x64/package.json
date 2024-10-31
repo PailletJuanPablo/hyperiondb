@@ -1,0 +1,18 @@
+{
+  "name": "hyperiondb-darwin-x64",
+  "version": "1.0.1",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "main": "hyperiondb.darwin-x64.node",
+  "files": [
+    "hyperiondb.darwin-x64.node"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  }
+}
