@@ -1,6 +1,6 @@
 const { HyperionDbWrapper } = require('./index.js');
 const net = require('net');
-
+const fs = require('fs');
 /**
  * Class representing a client for HyperionDB.
  */
@@ -59,6 +59,12 @@ class HyperionDBClient {
 
         // Store configuration settings
         this.config = config;
+
+        // If the dataDir not exist, create it
+        if (!fs.existsSync(config.dataDir)) {
+            fs.mkdirSync(config.dataDir);
+        }
+           
 
         // Primary key for unique identification of records
         this.primaryKey = primaryKey;

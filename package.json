@@ -25,6 +25,7 @@
     "node": ">= 10"
   },
   "scripts": {
+    "preinstall": "node scripts/check_rust.js",
     "install": "npm run build",
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",

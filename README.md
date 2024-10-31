@@ -32,7 +32,7 @@ npm install hyperiondb
 ### **1. Import HyperionDBClient**
 
 ```javascript
-const {HyperionDBClient} = require('hyperiondb');
+const HyperionDBClient = require('hyperiondb/hyperiondb-client');
 ``` 
 
 ### **2. Configuration**
