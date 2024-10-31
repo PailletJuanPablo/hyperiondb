@@ -20,7 +20,6 @@ pub async fn save_shard_to_disk(data_dir: &str, shard_id: u32, shard: Arc<DashMa
     let (compressed_data, result) = encoder.finish();
     result?;
     tokio::fs::write(data_file.clone(), compressed_data).await?; // Clonamos data_file
-    println!("Shard {} guardado en {}", shard_id, data_file); // Usamos el clone sin problemas
     Ok(())
 }
 

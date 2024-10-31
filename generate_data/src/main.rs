@@ -1,10 +1,17 @@
-// src/perf_test.rs
-
-use std::error::Error;
-use tokio::net::TcpStream;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter};
-use serde_json::json;
+use fake::faker::name::raw::*;
+use fake::faker::address::raw::*;
+use fake::faker::chrono::raw::DateTime;
+use fake::faker::lorem::raw::*;
+use fake::faker::number::raw::NumberWithFormat;
+use fake::faker::boolean::raw::Boolean;
+use fake::faker::currency::raw::CurrencyCode;
+use fake::{Fake, locales::EN};
 use rand::Rng;
+use serde_json::json;
+use serde_json::Value;
+use std::error::Error;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter};
+use tokio::net::TcpStream;
 use tokio::time::Instant;
 
 /// Configuración para la prueba de rendimiento
@@ -14,26 +21,45 @@ struct PerfConfig {
     batch_size: usize,
 }
 
-/// Genera un registro de usuario aleatorio
-fn generate_random_user(id: usize) -> serde_json::Value {
+/// Genera un producto con datos de ejemplo, utilizando `fake` para generar campos específicos.
+fn generate_product(id: usize) -> Value {
     let mut rng = rand::thread_rng();
-    let age: u8 = rng.gen_range(18..65);
-    let cities = vec![
-        "New York", "Los Angeles", "Chicago", "Houston", "Phoenix",
-        "Philadelphia", "San Antonio", "San Diego", "Dallas", "San Jose",
-    ];
-    let city = cities[rng.gen_range(0..cities.len())];
-    let street = format!("Street {}", rng.gen_range(1..100));
-    let zipcode = rng.gen_range(10000..99999);
+
+    let categories = vec!["Electronics", "Clothing", "Books", "Home", "Toys"];
+    let processors = vec!["Quad-core", "Octa-core", "Dual-core"];
+    let ram_options = vec!["8GB", "16GB", "32GB"];
+    let name: String = Name(EN).fake();
+    let description: String = Sentence(EN, 5..10).fake();
+    let price: f64 = rng.gen_range(10.0..500.0);
+    let category = categories[rng.gen_range(0..categories.len())].to_string();
+    let stock: u32 = rng.gen_range(0..200);
+    let sku: String = NumberWithFormat(EN, "SKU######").fake(); // SKU con formato específico
+
+    let specs = json!({
+        "processor": processors[rng.gen_range(0..processors.len())],
+        "ram": ram_options[rng.gen_range(0..ram_options.len())],
+        "battery": format!("{} mAh", rng.gen_range(2000..5000)),
+    });
+
+    let warehouses = json!({
+        "warehouse1": rng.gen_range(0..100),
+        "warehouse2": rng.gen_range(0..100),
+    });
 
     json!({
-        "name": format!("User{}", id),
-        "age": age,
-        "address": {
-            "city": city,
-            "street": street,
-            "zipcode": zipcode
-        }
+        "id": format!("prod{}", id),
+        "name": name,
+        "description": description,
+        "price": price,
+        "currency": CurrencyCode(EN).fake::<String>(),
+        "category": category,
+        "sku": sku,
+        "stock": stock,
+        "city": CityName(EN).fake::<String>(),
+        "specs": specs,
+        "warehouses": warehouses,
+        "in_stock": Boolean(EN, 50).fake::<bool>(),
+        "created_at": DateTime(EN).fake::<String>()
     })
 }
 
@@ -61,8 +87,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Configuración
     let config = PerfConfig {
         server_addr: "127.0.0.1:8080".to_string(),
-        num_records: 5000, // Cantidad de registros a insertar
-        batch_size: 250,    // Cantidad de registros por lote
+        num_records: 10000, // Cantidad de registros a insertar
+        batch_size: 500,    // Cantidad de registros por lote
     };
 
     // Conectar al servidor de HyperionDB
@@ -80,8 +106,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let mut batch_commands = Vec::new();
 
         for id in batch_start..=usize::min(batch_start + config.batch_size - 1, config.num_records) {
-            let user = generate_random_user(id);
-            let command = format!("INSERT user{} {}\n", id, user.to_string());
+            let product = generate_product(id);
+            let command = format!("INSERT prod{} {}\n", id, product.to_string());
             batch_commands.push(command);
         }
 

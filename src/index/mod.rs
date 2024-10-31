@@ -1,17 +1,30 @@
-// src/index/mod.rs
-
 use serde_json::Value;
 use std::collections::{BTreeMap, HashSet};
 use dashmap::DashMap;
+use crate::config::{IndexedField, IndexType};
 
-/// Enum para representar diferentes tipos de índices.
+/// Representa los tipos de índices en la base de datos.
 pub enum Index {
     Numeric(BTreeMap<i64, HashSet<String>>),
     String(BTreeMap<String, HashSet<String>>),
 }
 
 impl Index {
-    /// Retorna los keys que coinciden con la consulta.
+    pub fn as_numeric_mut(&mut self) -> Option<&mut BTreeMap<i64, HashSet<String>>> {
+        if let Index::Numeric(ref mut map) = self {
+            Some(map)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_string_mut(&mut self) -> Option<&mut BTreeMap<String, HashSet<String>>> {
+        if let Index::String(ref mut map) = self {
+            Some(map)
+        } else {
+            None
+        }
+    }
     pub fn query_keys(&self, operator: &str, value: &str) -> HashSet<String> {
         match self {
             Index::Numeric(btree_map) => query_numeric(btree_map, operator, value),
@@ -20,7 +33,7 @@ impl Index {
     }
 }
 
-/// Consulta para índices numéricos.
+/// Ejecuta una consulta en índices numéricos.
 fn query_numeric(map: &BTreeMap<i64, HashSet<String>>, operator: &str, value: &str) -> HashSet<String> {
     let mut result = HashSet::new();
     if let Ok(v) = value.parse::<f64>() {
@@ -32,27 +45,27 @@ fn query_numeric(map: &BTreeMap<i64, HashSet<String>>, operator: &str, value: &s
                 }
             }
             "!=" => {
-                for (_, set) in map.iter() { // Renombrado 'k' a '_'
+                for (_, set) in map.iter() {
                     result.extend(set.clone());
                 }
             }
             ">" => {
-                for (_, set) in map.range((int_value + 1)..) { // Renombrado 'k' a '_'
+                for (_, set) in map.range((int_value + 1)..) {
                     result.extend(set.clone());
                 }
             }
             ">=" => {
-                for (_, set) in map.range(int_value..) { // Renombrado 'k' a '_'
+                for (_, set) in map.range(int_value..) {
                     result.extend(set.clone());
                 }
             }
             "<" => {
-                for (_, set) in map.range(..int_value) { // Renombrado 'k' a '_'
+                for (_, set) in map.range(..int_value) {
                     result.extend(set.clone());
                 }
             }
             "<=" => {
-                for (_, set) in map.range(..=int_value) { // Renombrado 'k' a '_'
+                for (_, set) in map.range(..=int_value) {
                     result.extend(set.clone());
                 }
             }
@@ -62,7 +75,7 @@ fn query_numeric(map: &BTreeMap<i64, HashSet<String>>, operator: &str, value: &s
     result
 }
 
-/// Consulta para índices de cadena.
+/// Ejecuta una consulta en índices de cadena.
 fn query_string(map: &BTreeMap<String, HashSet<String>>, operator: &str, value: &str) -> HashSet<String> {
     let mut result = HashSet::new();
     match operator {
@@ -72,7 +85,7 @@ fn query_string(map: &BTreeMap<String, HashSet<String>>, operator: &str, value: 
             }
         }
         "!=" => {
-            for (_, set) in map.iter() { // Renombrado 'k' a '_'
+            for (_, set) in map.iter() {
                 result.extend(set.clone());
             }
         }
@@ -93,80 +106,112 @@ pub async fn update_indices_on_insert(
     indices: &DashMap<String, Index>,
     key: &String,
     value: &Value,
-    indexed_fields: &Vec<String>,
+    indexed_fields: &Vec<IndexedField>,
 ) {
     if let Value::Object(map) = value {
-        for field in indexed_fields.iter() {
+        for indexed_field in indexed_fields.iter() {
+            let field = &indexed_field.field;
+            let index_type = &indexed_field.index_type;
+
             if let Some(field_value) = get_nested_field(map, field) {
-                match field_value {
-                    Value::Number(num) => {
-                        if let Some(n) = num.as_f64() {
-                            let int_value = (n * 1000.0) as i64; // Convertir a entero
-                            indices.entry(field.clone()).or_insert_with(|| Index::Numeric(BTreeMap::new()));
-                            if let Index::Numeric(ref mut btree_map) = *indices.get_mut(field).unwrap() {
-                                btree_map.entry(int_value).or_insert_with(HashSet::new).insert(key.clone());
+                match index_type {
+                    IndexType::Numeric => {
+                        if let Value::Number(num) = field_value {
+                            if let Some(n) = num.as_f64() {
+                                let int_value = (n * 1000.0) as i64; // Convertir a entero
+                                indices
+                                    .entry(field.clone())
+                                    .or_insert_with(|| Index::Numeric(BTreeMap::new()));
+                                if let Some(mut index) = indices.get_mut(field) {
+                                    if let Index::Numeric(ref mut btree_map) = *index {
+                                        btree_map
+                                            .entry(int_value)
+                                            .or_insert_with(HashSet::new)
+                                            .insert(key.clone());
+                                    }
+                                }
                             }
                         }
                     }
-                    Value::String(s) => {
-                        indices.entry(field.clone()).or_insert_with(|| Index::String(BTreeMap::new()));
-                        if let Index::String(ref mut btree_map) = *indices.get_mut(field).unwrap() {
-                            btree_map.entry(s.clone()).or_insert_with(HashSet::new).insert(key.clone());
+                    IndexType::String => {
+                        if let Value::String(s) = field_value {
+                            indices
+                                .entry(field.clone())
+                                .or_insert_with(|| Index::String(BTreeMap::new()));
+                            if let Some(mut index) = indices.get_mut(field) {
+                                if let Index::String(ref mut btree_map) = *index {
+                                    btree_map
+                                        .entry(s.clone())
+                                        .or_insert_with(HashSet::new)
+                                        .insert(key.clone());
+                                }
+                            }
                         }
                     }
-                    _ => {}
                 }
             }
         }
     }
 }
 
-/// Actualiza los índices al eliminar un registro.
 pub async fn update_indices_on_delete(
     indices: &DashMap<String, Index>,
-    key: &str,
+    key: &String,
     value: &Value,
-    indexed_fields: &Vec<String>,
+    indexed_fields: &Vec<IndexedField>,
 ) {
     if let Value::Object(map) = value {
-        for field in indexed_fields.iter() {
+        for indexed_field in indexed_fields.iter() {
+            let field = &indexed_field.field;
+            let index_type = &indexed_field.index_type;
+
             if let Some(field_value) = get_nested_field(map, field) {
-                match field_value {
-                    Value::Number(num) => {
-                        if let Some(n) = num.as_f64() {
-                            let int_value = (n * 1000.0) as i64; // Convertir a entero
-                            if let Some(mut index) = indices.get_mut(field) {
-                                if let Index::Numeric(ref mut btree_map) = *index {
-                                    if let Some(set) = btree_map.get_mut(&int_value) {
-                                        set.remove(key);
-                                        if set.is_empty() {
-                                            btree_map.remove(&int_value);
+                match index_type {
+                    IndexType::Numeric => {
+                        if let Value::Number(num) = field_value {
+                            if let Some(n) = num.as_f64() {
+                                let int_value = (n * 1000.0) as i64;
+                                if let Some(mut index) = indices.get_mut(field) {
+                                    if let Some(btree_map) = index.as_numeric_mut() {
+                                        if let Some(keys_set) = btree_map.get_mut(&int_value) {
+                                            keys_set.remove(key);
+                                            if keys_set.is_empty() {
+                                                btree_map.remove(&int_value);
+                                            }
+                                        }
+                                        if btree_map.is_empty() {
+                                            indices.remove(field);
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                    Value::String(s) => {
-                        if let Some(mut index) = indices.get_mut(field) {
-                            if let Index::String(ref mut btree_map) = *index {
-                                if let Some(set) = btree_map.get_mut(s) {
-                                    set.remove(key);
-                                    if set.is_empty() {
-                                        btree_map.remove(s);
+                    IndexType::String => {
+                        if let Value::String(s) = field_value {
+                            if let Some(mut index) = indices.get_mut(field) {
+                                if let Some(btree_map) = index.as_string_mut() {
+                                    if let Some(keys_set) = btree_map.get_mut(s) {
+                                        keys_set.remove(key);
+                                        if keys_set.is_empty() {
+                                            btree_map.remove(s);
+                                        }
+                                    }
+                                    if btree_map.is_empty() {
+                                        indices.remove(field);
                                     }
                                 }
                             }
                         }
                     }
-                    _ => {}
                 }
             }
         }
     }
 }
 
-/// Función auxiliar para obtener campos anidados.
+
+/// Obtiene el campo anidado según el índice.
 fn get_nested_field<'a>(map: &'a serde_json::Map<String, Value>, field: &str) -> Option<&'a Value> {
     let parts: Vec<&str> = field.split('.').collect();
     let mut current = map;

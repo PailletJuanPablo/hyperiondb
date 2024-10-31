@@ -1,0 +1,24 @@
+{
+    "num_shards": 8,
+    "data_dir": "./hyperiondb_data",
+    "indexed_fields": [
+        { "field": "name", "index_type": "String" },
+        { "field": "age", "index_type": "Numeric" },
+        { "field": "address.city", "index_type": "String" },
+        { "field": "category", "index_type": "String" },
+        { "field": "city", "index_type": "String" },
+        { "field": "sku", "index_type": "String" },
+        { "field": "description", "index_type": "String" },
+        { "field": "address.zipcode", "index_type": "Numeric" },
+        { "field": "product_name", "index_type": "String" },
+        { "field": "price", "index_type": "Numeric" },
+        { "field": "currency", "index_type": "String" },
+        { "field": "specs.processor", "index_type": "String" },
+        { "field": "specs.ram", "index_type": "String" },
+        { "field": "specs.battery", "index_type": "Numeric" },
+        { "field": "in_stock", "index_type": "Numeric" },
+        { "field": "created_at", "index_type": "String" },
+        { "field": "warehouses.warehouse1", "index_type": "Numeric" },
+        { "field": "warehouses.warehouse2", "index_type": "Numeric" }
+    ]
+}
