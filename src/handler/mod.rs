@@ -188,6 +188,22 @@ pub async fn handle_command(db: &HyperionDB, command: String) -> Result<String, 
                 Ok("ERR Usage: QUERY <conditions>\n".to_string())
             }
         }
+        "INSERT_OR_UPDATE" => {
+            if let Some(rest) = cmd_parts.get(1) {
+                let insert_parts: Vec<&str> = rest.trim().splitn(2, ' ').collect();
+                if let (Some(key), Some(value_str)) = (insert_parts.get(0), insert_parts.get(1)) {
+                    let value: serde_json::Value = serde_json::from_str(value_str)?;
+                    db.insert_or_update(key.to_string(), value).await?;
+                    Ok("OK\n".to_string())
+                } else {
+                    // Formato incorrecto de comando INSERT_OR_UPDATE
+                    Ok("ERR Usage: INSERT_OR_UPDATE <key> <value>\n".to_string())
+                }
+            } else {
+                // Formato incorrecto de comando INSERT_OR_UPDATE
+                Ok("ERR Usage: INSERT_OR_UPDATE <key> <value>\n".to_string())
+            }
+        }
         "EXIT" => Ok("BYE\n".to_string()),
         _ => Ok("ERR Unknown command\n".to_string()),
     }

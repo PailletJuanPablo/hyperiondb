@@ -1,40 +1,10 @@
-# HyperionDB
-
-[![npm version](https://img.shields.io/npm/v/hyperiondb.svg)](https://www.npmjs.com/package/hyperiondb)
-[![license](https://img.shields.io/npm/l/hyperiondb.svg)](https://github.com/yourusername/hyperiondb/blob/main/LICENSE)
-[![downloads](https://img.shields.io/npm/dt/hyperiondb.svg)](https://www.npmjs.com/package/hyperiondb)
-
-![HyperionDB Logo](./assets/top.png)
-
-A minimalist Rust-based sharded database client for Node.js. HyperionDB offers high-performance data storage and retrieval with sharding support, making it suitable for scalable applications.
-
----
-
-## 🚀 Features
-
-- **High Performance**: Built with Rust for speed and efficiency.
-- **Sharding Support**: Distribute data across multiple shards for scalability.
-- **Easy Integration**: Simple API for Node.js applications.
-- **Custom Indexing**: Define indexed fields for faster queries.
-- **Cross-Platform**: Works on Windows, macOS, and Linux.
-
----
-
-## 📦 Installation
-
-Install HyperionDB via npm:
-
-```bash
-npm install hyperiondb
-```
-
 
 ## 🛠️ Setup and Usage
 
 ### **1. Import HyperionDBClient**
 
 ```javascript
-const HyperionDBClient = require('hyperiondb/hyperiondb-client');
+const HyperionDBClient = require('hyperiondb');
 ``` 
 
 ### **2. Configuration**
@@ -84,7 +54,11 @@ const client = new HyperionDBClient(config, primaryKey);`
 
 ## 🔄 CRUD Operations
 
-### **Insert a Record**
+
+### **Write a Record (Insert or Update)**
+
+The `writeRecord` method allows you to insert or update records based on the specified primary key. If a record with the same key exists, it merges the new data with the existing one; otherwise, it creates a new entry.
+
 
 ```javascript
 const record = {
@@ -95,8 +69,8 @@ const record = {
 };
 
 (async () => {
-  const response = await client.insert(record);
-  console.log('Insert response:', response); // Output: 'OK'
+  const response = await client.writeRecord(record);
+  console.log('Write response:', response); // Output: 'OK'
 })();
 ```
 ### **Retrieve a Record**
@@ -108,15 +82,7 @@ const record = {
 })();
 ```
 
-### **Update a Record**
 
-```javascript
-(async () => {
-  const updates = { price: 399.99 };
-  const success = await client.update('prod1748', updates);
-  console.log('Update successful:', success); // Output: true
-})();
-```
 
 ### **Delete a Record**
 
@@ -163,25 +129,18 @@ Initializes the database with the provided configuration.
 
 Starts the HyperionDB server on the specified address and port.
 
-#### `insert(record, key)`
 
-Inserts a record into the database.
+#### `writeRecord(record)`
 
--   **record**: The record object to insert.
--   **key** (optional): Custom key for the record. If not provided, uses `primaryKey` or `record.id`.
+Inserts or updates a record in the database. If the record exists (based on the primary key), updates the record by merging the new fields. If it doesn't exist, inserts the new record.
+
+-   **record**: The record object to insert or update.
 
 #### `get(id)`
 
 Retrieves a record by its ID.
 
 -   **id**: The ID of the record to retrieve.
-
-#### `update(id, updates)`
-
-Updates a record with the specified ID.
-
--   **id**: The ID of the record to update.
--   **updates**: An object containing the fields to update.
 
 #### `delete(condition)`
 
@@ -198,7 +157,6 @@ Lists all records in the database.
 Queries the database with complex conditions.
 
 -   **queryStr**: The query string (e.g., `'name CONTAINS "John" AND age > 30'`).
-
 ----------
 
 ## 📝 Examples
@@ -208,9 +166,9 @@ Queries the database with complex conditions.
 ```javascript
 (async () => {
   // Insert multiple records
-  await client.insert({ id: '1', name: 'Alice', age: 30 });
-  await client.insert({ id: '2', name: 'Bob', age: 25 });
-  await client.insert({ id: '3', name: 'Charlie', age: 35 });
+  await client.writeRecord({ id: '1', name: 'Alice', age: 30 });
+  await client.writeRecord({ id: '2', name: 'Bob', age: 25 });
+  await client.writeRecord({ id: '3', name: 'Charlie', age: 35 });
 
   // Query records where age is greater than 28
   const results = await client.query('age > 28');

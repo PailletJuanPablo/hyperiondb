@@ -64,7 +64,7 @@ class HyperionDBClient {
         if (!fs.existsSync(config.dataDir)) {
             fs.mkdirSync(config.dataDir);
         }
-           
+
 
         // Primary key for unique identification of records
         this.primaryKey = primaryKey;
@@ -123,77 +123,69 @@ class HyperionDBClient {
     }
 
     /**
-  * 🚀 **Insert a Record into HyperionDB**
+  * 🚀 **Write (Insert or Update) a Record in HyperionDB**
   * 
-  * Inserts a record into the HyperionDB database with a key specified in the method call, the 
-  * primary key defined during instantiation, or the record’s `id` field. Prioritizes the key parameter, 
-  * then falls back to the primary key or `id` if available. Throws an error if no key is available.
+  * This method allows inserting a new record or updating an existing record.
+  * If a record with the same key already exists, it merges the existing data with 
+  * the new data, ensuring only new or updated fields are changed.
   * 
-  * **Error Handling**: ❗ Throws an error if no valid key is found.
-  *
   * @async
-  * @param {Object} record - 📝 The record to insert, as an object with key-value pairs.
-  * @param {string} [key] - (Optional) The unique key for this record; if omitted, uses the constructor-defined 
-  * primary key or the record's `id`.
+  * @param {Object} record - 📝 The record to write, as a JavaScript object. Should contain at least one unique identifier field (`id` or the primary key defined in the config).
+  * @param {string} [key] - Optional. The unique key to use for this record. If not provided, defaults to `record.id` or primary key in config.
   * 
-  * @throws {Error} If no `key`, primary key, or `record.id` is available, an error is thrown.
+  * @throws {Error} If no key is provided, either as `record.id` or `key` parameter.
   * 
-  * @returns {Promise<string>} - ✅ A message confirming the insertion or an error message if failed.
+  * @returns {Promise<string>} - ✅ A message confirming the write operation or an error if the operation fails.
   * 
   * @example
-  * // Example 1: Insert with a custom key
+  * // Example usage:
   * const record = {
-  *   category: 'Electronics',
-  *   city: 'West Jakob Greenfelder town',
-  *   created_at: '1949-05-19T04:28:10.754099741+00:00',
-  *   currency: 'LKR',
-  *   description: 'harum ratione harum alias dolorem.',
   *   id: 'prod1748',
-  *   in_stock: false,
   *   name: 'Lexie Luettgen',
-  *   price: 355.0025481047212,
-  *   sku: 'SKU246021',
-  *   specs: { battery: '4351 mAh', processor: 'Dual-core', ram: '16GB' },
-  *   stock: 192,
-  *   warehouses: { warehouse1: 34, warehouse2: 51 }
+  *   price: 355.00,
+  *   in_stock: true
   * };
   * 
-  * const response = await client.insert(record, 'customKey123');
-  * console.log(response); // ✅ 'OK' (successful insert)
-  *
-  * @example
-  * // Example 2: Insert using the primary key specified in the constructor
-  * const client = new HyperionDBWrapper('sku');
-  * const response = await client.insert(record);
-  * console.log(response); // ✅ 'OK' (inserted with 'sku' as the key)
+  * const response = await client.writeRecord(record);
+  * console.log(response); // ✅ 'OK' (successful write)
   * 
-  * @example
-  * // ⚠️ Example 3: Insert without a valid key, causing an error
-  * try {
-  *   const response = await client.insert({ name: 'Invalid Record' });
-  * } catch (error) {
-  *   console.error('Expected error:', error.message); // ❌ Error: 'A key is required...'
-  * }
+  * // Update example with new fields
+  * const updatedRecord = {
+  *   id: 'prod1748',
+  *   price: 360.00,
+  *   category: 'Updated Electronics'
+  * };
+  * const response = await client.writeRecord(updatedRecord);
+  * console.log(response); // ✅ 'OK' (successful update with merged fields)
   */
-    async insert(record, key = null) {
-        // Attempt to use the specified key, the primary key defined in the instance, or the `id` field from the record
-        const insertKey = key || this.primaryKey || record.id;
+    async writeRecord(record, key = null) {
+        // Use the specified key if provided; otherwise, try to use `id` from the record or primary key in config
+        const recordKey = key || record[this.primaryKey] || record.id;
 
-        // If neither key nor primary key is provided, throw an error
-        if (!insertKey) {
-            throw new Error('A key is required: specify a key, set a primaryKey during instantiation, or ensure the record has an "id" field.');
+        if (!recordKey) {
+            throw new Error('A key is required: specify a key parameter or ensure the record has an "id" or primary key field.');
         }
 
-        // Convert the record object to a JSON string and sanitize newlines
-        const recordJson = JSON.stringify(record).replace(/[\n\r]/g, '');
+        // Attempt to fetch the existing record to merge with new data if it exists
+        let existingRecord = {};
+        try {
+            existingRecord = await this.get(recordKey);
+        } catch (error) {
+            // If the record does not exist, it will proceed with the new record only
+        }
 
-        // Construct the INSERT command
-        const command = `INSERT ${insertKey} ${recordJson}`;
+        // Merge existing data with new data (new data overwrites where conflicts exist)
+        const mergedRecord = { ...existingRecord, ...record };
 
-        // Send the command to the database server and return the response
+        // Convert merged record to JSON and format the INSERT command
+        const recordJson = JSON.stringify(mergedRecord).replace(/[\n\r]/g, '');
+        const command = `INSERT ${recordKey} ${recordJson}`;
+
+        // Execute the command and return the response
         const response = await this._sendCommand(command);
-        return response;
+        return response.trim() === 'OK' ? 'Record written successfully!' : response;
     }
+
 
 
     /**
@@ -275,30 +267,6 @@ class HyperionDBClient {
         return JSON.parse(response);
     }
 
-    /**
-     * ✏️ **Update a Record by ID in HyperionDB**
-     *
-     * Modifies an existing record in the database using the specified `id` and
-     * applies the `updates` object to change fields.
-     *
-     * **Error Handling**: ❗ Ensure the ID exists, or the update will fail.
-     *
-     * @async
-     * @param {string} id - 🆔 The unique identifier of the record to update.
-     * @param {Object} updates - 🔄 An object with fields to be updated (e.g., `{ "price": 499.99 }`).
-     * @returns {Promise<boolean>} - ✅ Returns `true` if the update was successful, `false` if failed.
-     * 
-     * @example
-     * // Update the price of a record by ID
-     * const wasUpdated = await client.update('prod1748', { price: 499.99 });
-     * console.log(wasUpdated); // true (if update succeeded)
-     */
-    async update(id, updates) {
-        const updatesJson = JSON.stringify(updates);
-        const command = `UPDATE ${id} ${updatesJson}`;
-        const response = await this._sendCommand(command);
-        return response.trim() === 'OK';
-    }
 
     /**
      * 🔎 **Query the Database with Complex Conditions**

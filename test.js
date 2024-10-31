@@ -1,4 +1,5 @@
 const HyperionDBClient = require('./hyperiondb-client.js');
+const net = require('net'); // Agregar si no está incluido para usar el query directo
 
 // Ejecuta un comando directamente a través de TCP usando Node.js
 async function query(command) {
@@ -46,14 +47,13 @@ async function query(command) {
       ],
       address: "127.0.0.1:8080" // Dirección y puerto del servidor HyperionDB
     };
+    
     const client = new HyperionDBClient(config);
-    await client.initialize()
-    // Inicializa la base de datos con tu configuración inicial
-
+    await client.initialize();
 
     console.log("Base de datos inicializada correctamente.");
-    // Insertar un nuevo registro
 
+    // Define un nuevo registro para insertar
     const record = {
       category: 'Electronics',
       city: 'West Jakob Greenfelder town',
@@ -77,13 +77,26 @@ async function query(command) {
       },
     };
 
-    // Insert the record
-    const insertResponse = await client.insert(record);
-    console.log('Insert response:', insertResponse);
-    // Realizar una consultaa
-    const queryResult = await client.query('name CONTAINS "Gas" AND price > 100');
-    console.log( queryResult);
+    // Inserta el registro con writeRecord (primero verifica si existe y luego inserta o actualiza)
+    const writeResponse = await client.writeRecord(record);
+    console.log('Respuesta de escritura (inserción):', writeResponse);
 
+    // Consulta el registro insertado para verificar la inserción
+    const queriedRecord = await client.get('prod1748');
+    console.log('Registro consultado después de inserción:', queriedRecord);
+
+    // Actualiza el registro existente utilizando writeRecord
+    const updatedData = {
+      id: 'prod1748',  // Asegura que use la misma ID para actualización
+      in_stock: true,
+      price: 400
+    };
+    const updateResponse = await client.writeRecord(updatedData);
+    console.log('Respuesta de escritura (actualización):', updateResponse);
+
+    // Consulta el registro nuevamente para verificar los cambios
+    const updatedRecord = await client.get('prod1748');
+    console.log('Registro consultado después de actualización:', updatedRecord);
 
   } catch (error) {
     console.error("Error durante la prueba:", error);
