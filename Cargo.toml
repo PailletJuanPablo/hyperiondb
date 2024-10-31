@@ -3,7 +3,6 @@ name = "hyperiondb"
 version = "0.1.0"
 edition = "2021"
 
-
 [dependencies]
 tokio = { version = "1.28", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -12,4 +11,14 @@ dashmap = "5.3"
 seahash = "3.0"
 lz4 = "1.24.0"
 futures = "0.3"
+napi = { version = "2.7.0", features = ["tokio_rt"] }
+napi-derive = "2.7.0"
+
+[lib]
+name = "hyperiondb"
+crate-type = ["cdylib"]
+
+[[bin]]
+name = "hyperiondb_bin"
+path = "src/main.rs"
 

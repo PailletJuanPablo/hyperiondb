@@ -1,7 +1,6 @@
 
 use super::hyperion_db_struct::HyperionDB;
-use crate::index::update_indices_on_insert;
-use crate::shard_manager::ShardManager;
+use crate::{index::update_indices_on_insert, shard_manager::ShardManager};
 use crate::storage::load_shard_from_disk;
 use dashmap::DashMap;
 use std::error::Error;
