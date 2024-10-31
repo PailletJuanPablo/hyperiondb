@@ -4,6 +4,8 @@
 [![license](https://img.shields.io/npm/l/hyperiondb.svg)](https://github.com/yourusername/hyperiondb/blob/main/LICENSE)
 [![downloads](https://img.shields.io/npm/dt/hyperiondb.svg)](https://www.npmjs.com/package/hyperiondb)
 
+![HyperionDB Logo](./assets/top.png)
+
 A minimalist Rust-based sharded database client for Node.js. HyperionDB offers high-performance data storage and retrieval with sharding support, making it suitable for scalable applications.
 
 ---
