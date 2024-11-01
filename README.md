@@ -3,7 +3,9 @@
 [![license](https://img.shields.io/npm/l/hyperiondb.svg)](https://github.com/yourusername/hyperiondb/blob/main/LICENSE)
 [![downloads](https://img.shields.io/npm/dt/hyperiondb.svg)](https://www.npmjs.com/package/hyperiondb)
 ![HyperionDB Logo](./assets/top.png)
+
 A minimalist Rust-based sharded database client for Node.js. HyperionDB offers high-performance data storage and retrieval with sharding support, making it suitable for scalable applications.
+
 ---
 ## 🚀 Features
 - **High Performance**: Built with Rust for speed and efficiency.
@@ -14,8 +16,7 @@ A minimalist Rust-based sharded database client for Node.js. HyperionDB offers h
 ---
 
 ## 📊 Benchmark Results
-
-HyperionDB was benchmarked for performance on standard CRUD operations, comparing its efficiency against other databases from the referenced paper. The tables below display the average execution time in milliseconds for INSERT, QUERY, UPDATE, and DELETE operations with varying batch sizes (1000, 10,000, and 100,000 records). These results demonstrate HyperionDB's speed and performance, especially in query operations.
+The benchmarks for HyperionDB were conducted based on the performance testing methodology outlined in the article ["A Performance Comparison of SQL and NoSQL Databases"](https://arxiv.org/abs/1806.04761). Following similar operations and record counts (1000, 10,000, and 100,000), we evaluated HyperionDB's INSERT, QUERY, UPDATE, and DELETE performance. These results demonstrate HyperionDB's speed and performance, especially in query operations.
 
 ### Mean Performance Time (ms) for CRUD Operations
 

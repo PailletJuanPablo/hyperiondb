@@ -1,6 +1,6 @@
 {
   "name": "hyperiondb",
-  "version": "2.5.0",
+  "version": "3.0.0",
   "main": "index.js",
   "types": "index.d.ts",
   "napi": {
@@ -122,12 +122,12 @@
   ],
   "private": false,
   "optionalDependencies": {
-    "hyperiondb-win32-x64-msvc": "2.0.2",
-    "hyperiondb-darwin-x64": "2.0.2",
-    "hyperiondb-linux-x64-gnu": "2.0.2",
-    "hyperiondb-darwin-arm64": "2.0.2",
-    "hyperiondb-linux-arm64-gnu": "2.0.2",
-    "hyperiondb-win32-arm64-msvc": "2.0.2"
+    "hyperiondb-win32-x64-msvc": "3.0.0",
+    "hyperiondb-darwin-x64": "3.0.0",
+    "hyperiondb-linux-x64-gnu": "3.0.0",
+    "hyperiondb-darwin-arm64": "3.0.0",
+    "hyperiondb-linux-arm64-gnu": "3.0.0",
+    "hyperiondb-win32-arm64-msvc": "3.0.0"
   },
   "repository": {
     "type": "git",
