@@ -1,10 +1,29 @@
+# HyperionDB
+[![npm version](https://img.shields.io/npm/v/hyperiondb.svg)](https://www.npmjs.com/package/hyperiondb)
+[![license](https://img.shields.io/npm/l/hyperiondb.svg)](https://github.com/yourusername/hyperiondb/blob/main/LICENSE)
+[![downloads](https://img.shields.io/npm/dt/hyperiondb.svg)](https://www.npmjs.com/package/hyperiondb)
+![HyperionDB Logo](./assets/top.png)
+A minimalist Rust-based sharded database client for Node.js. HyperionDB offers high-performance data storage and retrieval with sharding support, making it suitable for scalable applications.
+---
+## 🚀 Features
+- **High Performance**: Built with Rust for speed and efficiency.
+- **Sharding Support**: Distribute data across multiple shards for scalability.
+- **Easy Integration**: Simple API for Node.js applications.
+- **Custom Indexing**: Define indexed fields for faster queries.
+- **Cross-Platform**: Works on Windows, macOS, and Linux.
+---
+## 📦 Installation
+Install HyperionDB via npm:
+```bash
+npm install hyperiondb
+```
 
 ## 🛠️ Setup and Usage
 
 ### **1. Import HyperionDBClient**
 
 ```javascript
-const HyperionDBClient = require('hyperiondb');
+const HyperionDBClient = require('hyperiondb/hyperiondb-client');
 ``` 
 
 ### **2. Configuration**
