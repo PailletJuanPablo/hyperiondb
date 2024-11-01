@@ -293,6 +293,86 @@ class HyperionDBClient {
         return JSON.parse(response);
     }
 
+    /**
+ * 🔄 **Insert or Update Multiple Records in HyperionDB**
+ *
+ * This method allows inserting multiple records or updating them if they already exist.
+ * The method accepts an array of items, which are converted to JSON format and sent as a
+ * single batch command to the HyperionDB server.
+ *
+ * **Error Handling**: ❗ Ensure that the items parameter is a valid array of objects.
+ *
+ * @async
+ * @param {Array<Object>} items - 📝 Array of records to insert or update. Each item should 
+ * be a JavaScript object with fields to insert or update.
+ * @returns {Promise<string>} - ✅ Confirmation message for successful batch insert/update or an error message.
+ * 
+ * @example
+ * // Insert or update multiple records
+ * const items = [
+ *   { id: 'prod1', name: 'Product One', price: 100 },
+ *   { id: 'prod2', name: 'Product Two', price: 200 }
+ * ];
+ * const response = await client.insertOrUpdateMany(items);
+ * console.log(response); // 'Records inserted or updated successfully!' or error message
+ */
+    async insertOrUpdateMany(items) {
+        if (!Array.isArray(items) || items.length === 0) {
+            throw new Error('The items parameter must be a non-empty array.');
+        }
+
+        // Convert the array of items to JSON
+        const itemsJson = JSON.stringify(items);
+
+        // Construct the INSERT_OR_UPDATE_MANY command with the JSON payload
+        const command = `INSERT_OR_UPDATE_MANY ${itemsJson}`;
+
+        // Send the command and await the response
+        const response = await this._sendCommand(command);
+
+        return response;
+    }
+
+    /**
+ * 🚨 **Delete Multiple Records from HyperionDB by Keys**
+ *
+ * This method allows deleting multiple records by accepting an array of keys.
+ * The keys are converted to JSON format and sent as a single batch command
+ * to the HyperionDB server.
+ *
+ * **Error Handling**: ❗ Ensure that the keys parameter is a valid array with at least one key.
+ *
+ * @async
+ * @param {Array<string>} keys - 🔑 Array of keys for records to delete.
+ * @returns {Promise<string>} - ✅ Confirmation message for successful batch deletion or an error message.
+ * 
+ * @example
+ * // Delete multiple records by keys
+ * const keys = ['prod1', 'prod2', 'prod3'];
+ * const response = await client.deleteMany(keys);
+ * console.log(response); // 'Records deleted successfully!' or error message
+ */
+    async deleteMany(keys) {
+        if (!Array.isArray(keys) || keys.length === 0) {
+            throw new Error('The keys parameter must be a non-empty array.');
+        }
+
+        // Convert the array of keys to JSON
+        const keysJson = JSON.stringify(keys);
+
+        // Construct the DELETE_MANY command with the JSON payload
+        const command = `DELETE_MANY ${keysJson}`;
+
+        // Send the command and await the response
+        const response = await this._sendCommand(command);
+
+        return response;
+    }
+
+
+
+
+
 }
 
 module.exports = HyperionDBClient;
