@@ -12,6 +12,67 @@ A minimalist Rust-based sharded database client for Node.js. HyperionDB offers h
 - **Custom Indexing**: Define indexed fields for faster queries.
 - **Cross-Platform**: Works on Windows, macOS, and Linux.
 ---
+
+## 📊 Benchmark Results
+
+HyperionDB was benchmarked for performance on standard CRUD operations, comparing its efficiency against other databases from the referenced paper. The tables below display the average execution time in milliseconds for INSERT, QUERY, UPDATE, and DELETE operations with varying batch sizes (1000, 10,000, and 100,000 records). These results demonstrate HyperionDB's speed and performance, especially in query operations.
+
+### Mean Performance Time (ms) for CRUD Operations
+
+#### INSERT Operation
+| Database              | 1000 records | 10,000 records | 100,000 records |
+|-----------------------|--------------|----------------|-----------------|
+| Microsoft SQL Server  | 530.1        | 5516.2        | 51075.7        |
+| MySQL                 | 757.1        | 7326.4        | 76705.7        |
+| PostgreSQL            | 80.9         | 798.7         | 10476.7        |
+| MongoDB               | 54.9         | 533.8         | 5282.5         |
+| CouchDB               | 1.39         | 19.7          | 141.95         |
+| Couchbase             | 77.5         | 783.67        | 9188.13        |
+| **HyperionDB**        | **3.20**     | **36.80**     | **409.20**     |
+
+![Insert Benchmark](./assets/benchmark-insert.png)
+
+#### QUERY (SELECT) Operation
+| Database              | 1000 records | 10,000 records | 100,000 records |
+|-----------------------|--------------|----------------|-----------------|
+| Microsoft SQL Server  | 35.3         | 243.6         | 2313.4         |
+| MySQL                 | 4.1          | 117.8         | 844.8          |
+| PostgreSQL            | 3.7          | 19.4          | 663.5          |
+| MongoDB               | 1.0          | 6.0           | 43.5           |
+| CouchDB               | 2.14         | 30.44         | 307.54         |
+| Couchbase             | 4.34         | 34.89         | 345.77         |
+| **HyperionDB**        | **0.80**     | **0.80**      | **1.00**       |
+
+![Query Benchmark](./assets/benchmark-select.png)
+
+#### UPDATE Operation
+| Database              | 1000 records | 10,000 records | 100,000 records |
+|-----------------------|--------------|----------------|-----------------|
+| Microsoft SQL Server  | 36.1         | 286.5         | 2764.8         |
+| MySQL                 | 87.7         | 1264.0        | 10620.5        |
+| PostgreSQL            | 77.3         | 2385.2        | 25421.5        |
+| MongoDB               | 17.3         | 265.4         | 2875.9         |
+| CouchDB               | 1.56         | 18.64         | 266.68         |
+| Couchbase             | 73.16        | 731.39        | 10414.85       |
+| **HyperionDB**        | **3.20**     | **36.40**     | **399.40**     |
+
+![Update Benchmark](./assets/benchmark-update.png)
+
+#### DELETE Operation
+| Database              | 1000 records | 10,000 records | 100,000 records |
+|-----------------------|--------------|----------------|-----------------|
+| Microsoft SQL Server  | 127.0        | 482.9         | 5715.4         |
+| MySQL                 | 78.3         | 825.8         | 18794.4        |
+| PostgreSQL            | 35.5         | 582.6         | 11479.8        |
+| MongoDB               | 9.0          | 133.8         | 1530.9         |
+| CouchDB               | 1.19         | 15.57         | 132.7          |
+| Couchbase             | 39.37        | 405.57        | 6579.23        |
+| **HyperionDB**        | **6.80**     | **17.40**     | **130.00**     |
+
+![Delete Benchmark](./assets/benchmark-delete.png)
+
+The benchmark results show that HyperionDB provides competitive performance across all CRUD operations, particularly excelling in query operations. HyperionDB is well-suited for high-performance applications where rapid data access and updates are crucial.
+
 ## 📦 Installation
 Install HyperionDB via npm:
 ```bash

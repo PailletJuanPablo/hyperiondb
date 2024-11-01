@@ -1,3 +1,5 @@
+use serde_json::Value;
+
 use crate::hyperion_db::HyperionDB;
 use std::error::Error;
 
@@ -202,6 +204,28 @@ pub async fn handle_command(db: &HyperionDB, command: String) -> Result<String, 
             } else {
                 // Formato incorrecto de comando INSERT_OR_UPDATE
                 Ok("ERR Usage: INSERT_OR_UPDATE <key> <value>\n".to_string())
+            }
+        }
+        "DELETE ALL" => {
+            db.delete_all().await?;
+            Ok("OK\n".to_string())
+        }
+        "INSERT_OR_UPDATE_MANY" => {
+            if let Some(rest) = cmd_parts.get(1) {
+                let items: Vec<(String, Value)> = serde_json::from_str(rest)?;
+                db.insert_or_update_many(items).await?;
+                Ok("OK\n".to_string())
+            } else {
+                Ok("ERR Usage: INSERT_OR_UPDATE_MANY <[key, value]...>\n".to_string())
+            }
+        }
+        "DELETE_MANY" => {
+            if let Some(rest) = cmd_parts.get(1) {
+                let keys: Vec<String> = serde_json::from_str(rest)?;
+                db.delete_many(keys).await?;
+                Ok("OK\n".to_string())
+            } else {
+                Ok("ERR Usage: DELETE_MANY <[key1, key2, ...]>\n".to_string())
             }
         }
         "EXIT" => Ok("BYE\n".to_string()),
