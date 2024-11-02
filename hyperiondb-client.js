@@ -101,26 +101,51 @@ class HyperionDBClient {
      * @param {string} command - The command to send.
      * @returns {Promise<string>} - The response from the server.
      */
-    _sendCommand(command) {
-        return new Promise((resolve, reject) => {
-            const [host, portStr] = this.config.address.split(':');
-            const port = parseInt(portStr, 10);
-            const client = new net.Socket();
+    /**
+ * Sends a command to the HyperionDB server and returns the full response, handling chunked data.
+ * @private
+ * @param {string} command - The command to send.
+ * @returns {Promise<string>} - The complete response from the server.
+ */
+/**
+ * Sends a command to the HyperionDB server and waits for the response to complete.
+ * The method receives data in chunks and stops when a newline character `\n` is detected.
+ * @private
+ * @param {string} command - The command to send.
+ * @returns {Promise<string>} - The complete response from the server.
+ */
+_sendCommand(command) {
+    return new Promise((resolve, reject) => {
+        const [host, portStr] = this.config.address.split(':');
+        const port = parseInt(portStr, 10);
+        const client = new net.Socket();
 
-            client.connect(port, host, () => {
-                client.write(`${command}\n`);
-            });
+        let response = '';
 
-            client.on('data', (data) => {
-                resolve(data.toString());
-                client.destroy();
-            });
-
-            client.on('error', (err) => {
-                reject(new Error(`Error in TCP connection: ${err.message}`));
-            });
+        client.connect(port, host, () => {
+            client.write(`${command}\n`);
         });
-    }
+
+        client.on('data', (chunk) => {
+            response += chunk.toString();
+
+            // Check if the response includes the newline character
+            if (response.includes('\n')) {
+                client.end(); // Close the connection once the full response is received
+            }
+        });
+
+        client.on('end', () => {
+            resolve(response.trim()); // Trim any extra whitespace or newline
+        });
+
+        client.on('error', (err) => {
+            reject(new Error(`Error in TCP connection: ${err.message}`));
+        });
+    });
+}
+
+
 
     /**
   * 🚀 **Write (Insert or Update) a Record in HyperionDB**
@@ -241,7 +266,7 @@ class HyperionDBClient {
     async list() {
         const command = `LIST`;
         const response = await this._sendCommand(command);
-        return JSON.parse(response);
+        return response;
     }
 
     /**
@@ -320,19 +345,30 @@ class HyperionDBClient {
         if (!Array.isArray(items) || items.length === 0) {
             throw new Error('The items parameter must be a non-empty array.');
         }
-
-        // Convert the array of items to JSON
-        const itemsJson = JSON.stringify(items);
-
+    
+        // Convert each item to a tuple using the primary key or id field
+        const itemsTuples = items.map(item => {
+            const key = item[this.primaryKey] || item.id;
+            if (!key) {
+                throw new Error(`Each item must have a unique key field "${this.primaryKey}" or "id".`);
+            }
+            const data = { ...item }; // Clone item to avoid mutating the original
+            delete data[this.primaryKey]; // Remove the key field from the data object
+            delete data.id; // Ensure 'id' is not included if it's the primary key
+            return [key, data];
+        });
+    
+        // Convert the array of tuples to JSON
+        const itemsJson = JSON.stringify(itemsTuples);
+    
         // Construct the INSERT_OR_UPDATE_MANY command with the JSON payload
         const command = `INSERT_OR_UPDATE_MANY ${itemsJson}`;
-
+    
         // Send the command and await the response
         const response = await this._sendCommand(command);
-
-        return response;
+    
+        return response.trim() === 'OK' ? 'Records inserted or updated successfully!' : response;
     }
-
     /**
  * 🚨 **Delete Multiple Records from HyperionDB by Keys**
  *

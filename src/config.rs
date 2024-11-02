@@ -2,6 +2,7 @@ use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
+use std::error::Error;
 
 #[derive(Debug, Deserialize, Clone)]
 pub enum IndexType {
@@ -43,7 +44,7 @@ pub struct IndexedField {
 ///
 /// # Returns
 ///
-/// * `Result<Self, Box<dyn std::error::Error>>` - On success, returns an instance of `Config`. On failure, returns an error.
+/// * `Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>>` - On success, returns an instance of `Config`. On failure, returns an error.
 ///
 /// # Errors
 ///
@@ -52,12 +53,10 @@ pub struct IndexedField {
 /// - The file contents cannot be read.
 /// - The file contents cannot be parsed as JSON.
 impl Config {
-    pub fn load_from_file<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn load_from_file<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
         let config = serde_json::from_reader(reader)?;
         Ok(config)
     }
 }
-
-

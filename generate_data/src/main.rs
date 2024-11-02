@@ -87,8 +87,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Configuración
     let config = PerfConfig {
         server_addr: "127.0.0.1:8080".to_string(),
-        num_records: 2000, // Cantidad de registros a insertar
-        batch_size: 100,    // Cantidad de registros por lote
+        num_records: 10000, // Cantidad de registros a insertar
+        batch_size: 1000,    // Cantidad de registros por lote
     };
 
     // Conectar al servidor de HyperionDB
@@ -103,29 +103,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let start_insert = Instant::now();
 
     for batch_start in (1..=config.num_records).step_by(config.batch_size) {
-        let mut batch_commands = Vec::new();
+        let mut batch_data = Vec::new();
 
         for id in batch_start..=usize::min(batch_start + config.batch_size - 1, config.num_records) {
             let product = generate_product(id);
-            let command = format!("INSERT prod{} {}\n", id, product.to_string());
-            batch_commands.push(command);
+            batch_data.push((format!("prod{}", id), product));
         }
 
-        // Enviar todos los comandos de inserción en el lote
-        for command in &batch_commands {
-            send_command(&mut writer, command).await?;
-        }
+        // Crear el comando INSERT_MANY con el lote de productos en formato JSON
+        let insert_many_command = format!("INSERT_OR_UPDATE_MANY {}\n", serde_json::to_string(&batch_data)?);
+        send_command(&mut writer, &insert_many_command).await?;
 
-        // Leer todas las respuestas
-        for _ in &batch_commands {
-            let response = read_response(&mut reader).await?;
-            if response != "OK" {
-                eprintln!("Error al insertar el registro: {}", response);
-            }
+        // Leer la respuesta del servidor
+        let response = read_response(&mut reader).await?;
+        if response != "OK" {
+            eprintln!("Error al insertar el lote: {}", response);
         }
 
         println!(
-            "Registros insertados desde {} hasta {}...",
+            "Lote de registros insertados desde {} hasta {}...",
             batch_start,
             usize::min(batch_start + config.batch_size - 1, config.num_records)
         );

@@ -197,3 +197,4 @@ Cargo.lock
 *.node
 generate_data
 /node_modules
+/hyperiondb_data

@@ -1,7 +1,6 @@
 use serde_json::Value;
-
 use crate::hyperion_db::HyperionDB;
-use std::error::Error;
+use std::error::Error as StdError;
 
 pub struct Condition {
     pub field: String,
@@ -16,6 +15,33 @@ pub enum Expr {
     Group(Box<Expr>),
 }
 
+use serde_json::Error as SerdeError;
+use std::fmt;
+
+pub type BoxedError = Box<dyn StdError + Send + Sync + 'static>;
+
+#[derive(Debug)]
+pub struct HyperionError(BoxedError);
+
+impl fmt::Display for HyperionError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl StdError for HyperionError {}
+
+impl From<BoxedError> for HyperionError {
+    fn from(error: BoxedError) -> Self {
+        HyperionError(error)
+    }
+}
+
+impl From<SerdeError> for HyperionError {
+    fn from(error: SerdeError) -> Self {
+        HyperionError(Box::new(error))
+    }
+}
 fn tokenize(s: &str) -> Vec<String> {
     let mut tokens = Vec::new();
     let mut chars = s.chars().peekable();
@@ -47,11 +73,7 @@ fn tokenize(s: &str) -> Vec<String> {
                 }
             }
             let upper_token = token.to_uppercase();
-            if upper_token == "AND"
-                || upper_token == "OR"
-                || upper_token == "("
-                || upper_token == ")"
-            {
+            if upper_token == "AND" || upper_token == "OR" || upper_token == "(" || upper_token == ")" {
                 tokens.push(upper_token);
             } else {
                 tokens.push(token);
@@ -128,28 +150,13 @@ fn parse_condition(tokens: &[String], i: &mut usize) -> Result<Condition, String
         value: value.clone(),
     })
 }
-pub async fn handle_command(db: &HyperionDB, command: String) -> Result<String, Box<dyn Error>> {
+
+pub async fn handle_command(db: &HyperionDB, command: String) -> Result<String, HyperionError> {
     let cmd_line = command.trim();
     let cmd_parts: Vec<&str> = cmd_line.splitn(2, ' ').collect();
     let cmd = cmd_parts.get(0).unwrap_or(&"").to_uppercase();
 
     match cmd.as_str() {
-        "INSERT" => {
-            if let Some(rest) = cmd_parts.get(1) {
-                let insert_parts: Vec<&str> = rest.trim().splitn(2, ' ').collect();
-                if let (Some(key), Some(value_str)) = (insert_parts.get(0), insert_parts.get(1)) {
-                    let value: serde_json::Value = serde_json::from_str(value_str)?;
-                    db.insert(key.to_string(), value).await?;
-                    Ok("OK\n".to_string())
-                } else {
-                    // Formato incorrecto de comando INSERT
-                    Ok("ERR Usage: INSERT <key> <value>\n".to_string())
-                }
-            } else {
-                // Formato incorrecto de comando INSERT
-                Ok("ERR Usage: INSERT <key> <value>\n".to_string())
-            }
-        }
         "GET" => {
             if let Some(key) = cmd_parts.get(1) {
                 match db.get(*key).await {
@@ -157,16 +164,16 @@ pub async fn handle_command(db: &HyperionDB, command: String) -> Result<String, 
                     None => Ok("NULL\n".to_string()),
                 }
             } else {
-                // Formato incorrecto de comando GET
                 Ok("ERR Usage: GET <key>\n".to_string())
             }
         }
         "DELETE" => {
             if let Some(key) = cmd_parts.get(1) {
-                db.delete(key.to_string()).await?; // Convertimos &str a String
+                db.delete(key.to_string())
+                    .await
+                    .map_err(HyperionError::from)?;
                 Ok("OK\n".to_string())
             } else {
-                // Formato incorrecto de comando DELETE
                 Ok("ERR Usage: DELETE <key>\n".to_string())
             }
         }
@@ -180,7 +187,6 @@ pub async fn handle_command(db: &HyperionDB, command: String) -> Result<String, 
                 let tokens = tokenize(rest);
                 match parse_expression(&tokens) {
                     Ok((expr, _)) => {
-                        // Ejecutamos la consulta con la expresión lógica
                         let results = db.query_expression(&expr).await;
                         Ok(format!("{}\n", serde_json::to_string(&results)?))
                     },
@@ -195,25 +201,29 @@ pub async fn handle_command(db: &HyperionDB, command: String) -> Result<String, 
                 let insert_parts: Vec<&str> = rest.trim().splitn(2, ' ').collect();
                 if let (Some(key), Some(value_str)) = (insert_parts.get(0), insert_parts.get(1)) {
                     let value: serde_json::Value = serde_json::from_str(value_str)?;
-                    db.insert_or_update(key.to_string(), value).await?;
+                    db.insert_or_update(key.to_string(), value)
+                        .await
+                        .map_err(HyperionError::from)?;
                     Ok("OK\n".to_string())
                 } else {
-                    // Formato incorrecto de comando INSERT_OR_UPDATE
                     Ok("ERR Usage: INSERT_OR_UPDATE <key> <value>\n".to_string())
                 }
             } else {
-                // Formato incorrecto de comando INSERT_OR_UPDATE
                 Ok("ERR Usage: INSERT_OR_UPDATE <key> <value>\n".to_string())
             }
         }
         "DELETE ALL" => {
-            db.delete_all().await?;
+            db.delete_all()
+                .await
+                .map_err(HyperionError::from)?;
             Ok("OK\n".to_string())
         }
         "INSERT_OR_UPDATE_MANY" => {
             if let Some(rest) = cmd_parts.get(1) {
                 let items: Vec<(String, Value)> = serde_json::from_str(rest)?;
-                db.insert_or_update_many(items).await?;
+                db.insert_or_update_many(items)
+                    .await
+                    .map_err(HyperionError::from)?;
                 Ok("OK\n".to_string())
             } else {
                 Ok("ERR Usage: INSERT_OR_UPDATE_MANY <[key, value]...>\n".to_string())
@@ -222,7 +232,9 @@ pub async fn handle_command(db: &HyperionDB, command: String) -> Result<String, 
         "DELETE_MANY" => {
             if let Some(rest) = cmd_parts.get(1) {
                 let keys: Vec<String> = serde_json::from_str(rest)?;
-                db.delete_many(keys).await?;
+                db.delete_many(keys)
+                    .await
+                    .map_err(HyperionError::from)?;
                 Ok("OK\n".to_string())
             } else {
                 Ok("ERR Usage: DELETE_MANY <[key1, key2, ...]>\n".to_string())

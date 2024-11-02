@@ -14,10 +14,11 @@ use std::error::Error;
 use std::sync::Arc;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     let config_path = "config.json";
     let config = Config::load_from_file(config_path)?;
 
+    // Asegura el tipo de error para la inicialización de HyperionDB
     let db = Arc::new(HyperionDB::new(config).await?);
 
     let listener = TcpListener::bind("127.0.0.1:8080").await?;

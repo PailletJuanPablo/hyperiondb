@@ -55,16 +55,16 @@ def perform_operation_benchmark(client, operation, data, batch_size):
         elif operation == "update":
             items = [{"_id": item["_id"], **item, "content": "Updated Content"} for item in data[:batch_size]]
             client.insert_or_update_many(items)
+            
+        
 
-        elif operation == "delete":
-            keys = [item["_id"] for item in data[:batch_size]]
-            client.delete_many(keys)
+     
 
         elapsed_time = (time.time() - start_time) * 1000  # Convert to milliseconds
         times.append(elapsed_time)
 
     average_time = sum(times) / len(times)
-    print(f"Operación '{operation.upper()}' para {batch_size} registros -> Tiempo promedio: {average_time:.4f} ms")
+    print(f"Operación '{operation.upper()}' para {batch_size} registros -> Tiempo promedio: {average_time} ms")
     return average_time
 
 

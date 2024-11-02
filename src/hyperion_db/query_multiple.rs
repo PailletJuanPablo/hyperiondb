@@ -29,7 +29,6 @@ impl HyperionDB {
                     if let Some(index) = self.indices.get(&cond.field) {
                         index.query_keys(&cond.operator, &cond.value)
                     } else {
-                        println!("No se encontró índice para el campo: {}", cond.field);
                         HashSet::new()
                     }
                 }
