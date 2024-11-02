@@ -122,12 +122,12 @@
   ],
   "private": false,
   "optionalDependencies": {
-    "hyperiondb-win32-x64-msvc": "3.1.2",
-    "hyperiondb-darwin-x64": "3.1.2",
-    "hyperiondb-linux-x64-gnu": "3.1.2",
-    "hyperiondb-darwin-arm64": "3.1.2",
-    "hyperiondb-linux-arm64-gnu": "3.1.2",
-    "hyperiondb-win32-arm64-msvc": "3.1.2"
+    "hyperiondb-win32-x64-msvc": "3.1.3",
+    "hyperiondb-darwin-x64": "3.1.3",
+    "hyperiondb-linux-x64-gnu": "3.1.3",
+    "hyperiondb-darwin-arm64": "3.1.3",
+    "hyperiondb-linux-arm64-gnu": "3.1.3",
+    "hyperiondb-win32-arm64-msvc": "3.1.3"
   },
   "repository": {
     "type": "git",
