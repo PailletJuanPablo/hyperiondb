@@ -1,6 +1,6 @@
 use super::hyperion_db_struct::HyperionDB;
 use crate::config::Config;
-use crate::storage::load_shard_from_disk;
+use crate::storage::{load_shard_from_disk, WalManager};
 use crate::{index::update_indices_on_insert, shard_manager::ShardManager};
 use dashmap::DashMap;
 use serde_json::Value;
@@ -36,12 +36,15 @@ impl HyperionDB {
                 ).await;
             }
         }
+        let shard_ids: Vec<u32> = (0..shard_manager.num_shards as usize).map(|x| x as u32).collect();
+        let wal_manager = Arc::new(WalManager::new(shard_ids));
 
         Ok(HyperionDB {
             shards,
             indices,
             shard_manager,
             indexed_fields: config.indexed_fields,
+            wal_manager
         })
     }
 }

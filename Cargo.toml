@@ -19,6 +19,7 @@ napi = { version = "2.7.0", features = ["tokio_rt"] }
 napi-derive = "2.7.0"
 bincode = "1.3"
 twox-hash = "1.6" 
+lazy_static = "1.4"
 
 [build-dependencies]
 napi-build = "2.0.1"

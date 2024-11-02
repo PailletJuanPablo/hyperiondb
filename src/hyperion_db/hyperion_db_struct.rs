@@ -1,6 +1,7 @@
 
 use crate::index::Index;
 use crate::shard_manager::ShardManager;
+use crate::storage::WalManager;
 use dashmap::DashMap;
 use serde_json::Value;
 use std::sync::Arc;
@@ -12,4 +13,6 @@ pub struct HyperionDB {
     pub indices: Arc<DashMap<String, Index>>,
     pub shard_manager: Arc<ShardManager>,
     pub indexed_fields: Vec<IndexedField>,
+    pub wal_manager: Arc<WalManager>,
+
 }
