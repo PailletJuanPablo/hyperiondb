@@ -13,3 +13,4 @@ __test__
 renovate.json
 hyperiondb_data
 node_modules
+hyperiondb_data/*
