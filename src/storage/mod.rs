@@ -35,8 +35,6 @@ pub async fn load_from_wal(
                 }
             }
         }
-    } else {
-        println!("Archivo WAL no encontrado para shard {}: se omite la carga de WAL.", shard_id);
     }
 
     Ok(())

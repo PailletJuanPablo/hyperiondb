@@ -266,7 +266,7 @@ _sendCommand(command) {
     async list() {
         const command = `LIST`;
         const response = await this._sendCommand(command);
-        return response;
+        return JSON.parse(response);
     }
 
     /**

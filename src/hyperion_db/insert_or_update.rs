@@ -37,7 +37,7 @@ impl HyperionDB {
         &self,
         data: Vec<(String, Value)>,
     ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-        let batch_size = 500; // Procesaremos en lotes de 1000 por defecto
+        let batch_size = 250; // Procesaremos en lotes de 1000 por defecto
         let data_dir = self.shard_manager.data_dir.clone();
         let indices = self.indices.clone();
         let indexed_fields = self.indexed_fields.clone();

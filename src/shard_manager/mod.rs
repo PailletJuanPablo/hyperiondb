@@ -27,7 +27,6 @@ impl ShardManager {
         for shard_id in 0..num_shards {
             // Cargar shard_data desde disco como HashMap
             let shard_data = load_shard_from_disk(&data_dir, shard_id).await?;
-            println!("Shard {}: Cargados {} registros desde disco.", shard_id, shard_data.len());
 
             // Convertimos shard_data a un DashMap y luego lo envolvemos en un Arc
             let shard = Arc::new(DashMap::from_iter(shard_data.into_iter()));
